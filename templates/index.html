@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EirGrid Dashboard</title>
+</head>
+<body>
+
+<h1>EirGrid Energy Dashboard</h1>
+
+<h2>Latest Data</h2>
+{{ table | safe }}
+
+<h2>Renewable Ratio Trend</h2>
+<img src="{{ plot_url }}" width="800">
+
+</body>
+</html>
