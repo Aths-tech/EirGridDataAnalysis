@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EirGrid Dashboard</title>
+</head>
+<body>
+
+<h1>EirGrid Energy Dashboard</h1>
+
+<!-- Date Filter -->
+<form method="POST">
+    <label>Select Date:</label>
+    <select name="date">
+        {% for d in dates %}
+            <option value="{{ d }}" {% if d == selected_date %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+</form>
+
+<h2>Data Table</h2>
+{{ table | safe }}
+
+<h2>Wind vs Demand</h2>
+<img src="{{ wind_plot }}" width="800">
+
+<h2>Renewable Ratio</h2>
+<img src="{{ ratio_plot }}" width="800">
+
+<h2>Interconnection</h2>
+<img src="{{ inter_plot }}" width="800">
+
+</body>
+</html>
