@@ -206,7 +206,9 @@ def run_pipeline():
         print("No of Rowsin API1:", len(api1))
         print("No of Rows in API2:", len(api2))
         print("No of Rows in API3:", len(api3))
-        
+        if len(api1) == 0 or len(api2) == 0 or len(api3) == 0:
+            print(f"Skipping {date} (incomplete API data)")
+            continue
         # Processing api responses
         df1 = processData(api1)
         df2 = processData(api2)
