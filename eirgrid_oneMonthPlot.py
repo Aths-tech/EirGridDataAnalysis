@@ -12,38 +12,42 @@ engine = create_engine("sqlite:///eirGrid_Monthly.db")
 @app.route("/", methods=["GET", "POST"])
 def index():
 
-    selected_date = None
 
-    if request.method == "POST":
-        selected_date = request.form.get("date")
-
-        query = f"""
-        SELECT * FROM eirgrid__monthly_data
-        WHERE date = '{selected_date}'
-        ORDER BY time
-        """
-    else:
-        query = """
-        SELECT * FROM eirgrid__monthly_data
-        ORDER BY time DESC
-        LIMIT 100
-        """
-
-    df = pd.read_sql(query, engine)
+    # Fetch Data From DB
+    df = pd.read_sql("SELECT * FROM eirgrid_monthly_data", engine)
 
     if df.empty:
         return "No data available"
 
     df["time"] = pd.to_datetime(df["time"])
 
-    # Ensure static folder
+    # Get Available Dates
+    available_dates = sorted(df["date"].unique())
+
+    selected_date = request.form.get("date") if request.method == "POST" else available_dates[-1]
+
+    # Filter data for selected date
+    df_day = df[df["date"] == selected_date]
+
+
+    # Find missing dates
+    all_dates = pd.date_range(
+        start=pd.to_datetime(min(available_dates), format="%d-%b-%Y"),
+        end=pd.to_datetime(max(available_dates), format="%d-%b-%Y")
+    )
+
+    all_dates_str = [d.strftime("%d-%b-%Y") for d in all_dates]
+
+    missing_dates = list(set(all_dates_str) - set(available_dates))
+
+    # Create Static folder
     if not os.path.exists("static"):
         os.makedirs("static")
 
-    # Wind vs Demand Graph
+    # Graph for Wind vs Demand (selected day)
     plt.figure()
-    plt.plot(df["time"], df["wind"], label="Wind")
-    plt.plot(df["time"], df["actual_demand"], label="Demand")
+    plt.plot(df_day["time"], df_day["wind"], label="Wind")
+    plt.plot(df_day["time"], df_day["actual_demand"], label="Demand")
     plt.legend()
     plt.xticks(rotation=45)
 
@@ -51,38 +55,38 @@ def index():
     plt.savefig(wind_plot)
     plt.close()
 
-    # Renewable Ratio Graph
+    # Graph for Renewable Ratio (selected day)
     plt.figure()
-    plt.plot(df["time"], df["renewableRatio"])
+    plt.plot(df_day["time"], df_day["renewableRatio"])
     plt.xticks(rotation=45)
 
     ratio_plot = "static/renewable_ratio.png"
     plt.savefig(ratio_plot)
     plt.close()
 
-   
-    # Interconnection Graph
+    # Graph for renewvable energy trend (avg renewable ratio)
+    df_trend = df.groupby("date")["renewableRatio"].mean().reset_index()
+
     plt.figure()
-    plt.plot(df["time"], df["interconnection"])
+    plt.plot(df_trend["date"], df_trend["renewableRatio"])
     plt.xticks(rotation=45)
 
-    inter_plot = "static/interconnection.png"
-    plt.savefig(inter_plot)
+    trend_plot = "static/trend.png"
+    plt.savefig(trend_plot)
     plt.close()
 
-    # Get unique dates for dropdown
-    dates = pd.read_sql("SELECT DISTINCT date FROM eirgrid__monthly_data", engine)
-
+    # Visualize
     return render_template(
         "index1.html",
-        table=df.to_html(index=False),
+        table=df_day.to_html(index=False),
+        dates=available_dates,
+        selected_date=selected_date,
+        missing_dates=missing_dates,
         wind_plot=wind_plot,
         ratio_plot=ratio_plot,
-        inter_plot=inter_plot,
-        dates=dates["date"].tolist(),
-        selected_date=selected_date
+        trend_plot=trend_plot
     )
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True) 
