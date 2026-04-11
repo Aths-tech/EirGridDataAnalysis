@@ -122,7 +122,7 @@ def mergeData(df_demand, df_interconnection, df_wind_solar, df_co2emission):
         "INTER_NET_ROI": "interconnection",
         "CO2_EMISSIONS": "co2emission"
     }, inplace=True)
-
+    df.drop(columns=["INTER_EWIC", "INTER_GRNLK"], errors="ignore", inplace=True)
     # Ensure required columns exist
     required_cols = ["wind", "solar", "actual_demand", "interconnection", "co2emission"]
     for col in required_cols:
