@@ -8,6 +8,9 @@ This program will fetch data from EirGrid site apis to fetch :
 1. Solar, wind contribution to energy generation
 2. The actual demand hourly, here we are taking the last quarter of the hour data
 3. Interconnection shows the flow of energy between Ireland and Wales,Northern Ireland and Scotland.Flows from Great Britain to Ireland are shown as a positive MW transfer, while those from Ireland to Great Britain are shown as a negative MW transfer. 
+
+This program will fetch the hourly data (last quarter value of hr) for last 30 days, from above 3 apis, get the details, create data set features from each api response
+Calculate the   
 '''
 
 

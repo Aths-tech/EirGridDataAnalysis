@@ -3,77 +3,181 @@
 <head>
     <title>Energy Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<h2>⚡ Ireland Energy Dashboard</h2>
+<div class="header">
+    ⚡ Ireland Smart Grid Dashboard
+</div>
+<div class="card">
+    <h3>Sustainability Gauge</h3>
+    <div style="width: 250px; margin: auto;">
+        <canvas id="gaugeChart"></canvas>
+    </div>
+    <h2 id="gaugeValue" style="text-align:center; color:white;"></h2>
+</div>
+<div class="controls">
+    <input type="date" id="datePicker">
+    <button onclick="loadData()">Load Data</button>
 
-<!-- Date Picker -->
-<input type="date" id="datePicker">
-<button onclick="loadData()">Load</button>
+    <label><input type="checkbox" id="toggleWind" checked> Wind</label>
+    <label><input type="checkbox" id="toggleSolar" checked> Solar</label>
+    <label><input type="checkbox" id="toggleCO2" checked> CO2</label>
+</div>
 
-<!-- Toggle -->
-<label><input type="checkbox" id="toggleWind" checked> Wind</label>
-<label><input type="checkbox" id="toggleSolar" checked> Solar</label>
-<label><input type="checkbox" id="toggleCO2" checked> CO2</label>
+<div class="container">
 
-<canvas id="mainChart"></canvas>
+    <div class="card">
+        <h3>Wind & Solar Generation</h3>
+        <canvas id="generationChart"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>CO2 Emissions</h3>
+        <canvas id="co2Chart"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Renewable %</h3>
+        <canvas id="renewableChart"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Interconnection</h3>
+        <canvas id="interChart"></canvas>
+    </div>
+
+</div>
 
 <script>
-let chart;
+let generationChart, co2Chart, renewableChart, interChart, gaugeChart;
 
 async function loadData() {
-    const date = document.getElementById("datePicker").value;
+    try {
+        const date = document.getElementById("datePicker").value;
+        const res = await fetch(`/data?date=${date}`);
+        const data = await res.json();
 
-    const res = await fetch(`/data?date=${date}`);
-    const data = await res.json();
+        console.log("API DATA:", data);
 
-    const datasets = [];
+        const labels = data.time;
 
-    if (document.getElementById("toggleWind").checked) {
-        datasets.push({
-            label: "Wind",
-            data: data.wind,
-            borderWidth: 2
+        // ✅ Get latest sustainability
+        const latest = data.latest_sustainability;
+
+        // 🔹 Destroy old charts
+        if (generationChart) generationChart.destroy();
+        if (co2Chart) co2Chart.destroy();
+        if (renewableChart) renewableChart.destroy();
+        if (interChart) interChart.destroy();
+        if (gaugeChart) gaugeChart.destroy();
+
+        // 🌬️ Wind + Solar
+        generationChart = new Chart(document.getElementById("generationChart"), {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: "Wind", data: data.wind, borderColor: "#22c55e", tension: 0.4 },
+                    { label: "Solar", data: data.solar, borderColor: "#facc15", tension: 0.4 }
+                ]
+            },
+            options: chartOptions()
         });
-    }
 
-    if (document.getElementById("toggleSolar").checked) {
-        datasets.push({
-            label: "Solar",
-            data: data.solar,
-            borderWidth: 2
+        // 🌍 CO2
+        co2Chart = new Chart(document.getElementById("co2Chart"), {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "CO2 Emissions",
+                    data: data.co2,
+                    borderColor: "#ef4444",
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions()
         });
-    }
 
-    if (document.getElementById("toggleCO2").checked) {
-        datasets.push({
-            label: "CO2",
-            data: data.co2,
-            borderWidth: 2
+        // ⚡ Renewable %
+        renewableChart = new Chart(document.getElementById("renewableChart"), {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Renewable %",
+                    data: data.renewable,
+                    borderColor: "#3b82f6",
+                    borderDash: [5,5],
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions()
         });
-    }
 
-    if (chart) chart.destroy();
+        // 🔌 Interconnection
+        interChart = new Chart(document.getElementById("interChart"), {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Interconnection",
+                    data: data.interconnection
+                }]
+            },
+            options: chartOptions()
+        });
 
-    chart = new Chart(document.getElementById("mainChart"), {
-        type: "line",
-        data: {
-            labels: data.time,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            interaction: {
-                mode: 'index',
-                intersect: false
+        // 🎯 ✅ Sustainability Gauge (NEW)
+        const color = latest > 70 ? "#22c55e" : latest > 40 ? "#facc15" : "#ef4444";
+
+        gaugeChart = new Chart(document.getElementById("gaugeChart"), {
+            type: "doughnut",
+            data: {
+                datasets: [{
+                    data: [latest, 100 - latest],
+                    backgroundColor: [color, "#1f2937"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                rotation: -90,          // 🔥 start from left
+                circumference: 180,     // 🔥 half circle
+                cutout: "75%",
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
             }
-        }
-    });
+        });
+
+// Show value in center
+document.getElementById("gaugeValue").innerText = latest.toFixed(1) + "%";
+
+        console.log("Latest sustainability:", latest);
+
+    } catch (error) {
+        console.error("Error loading data:", error);
+    }
 }
 
-// Auto load today
+function chartOptions() {
+    return {
+        responsive: true,
+        plugins: {
+            legend: { labels: { color: "#e5e7eb" } },
+            tooltip: { mode: "index", intersect: false }
+        },
+        scales: {
+            x: { ticks: { color: "#94a3b8" } },
+            y: { ticks: { color: "#94a3b8" } }
+        }
+    };
+}
+
 window.onload = loadData;
 </script>
 

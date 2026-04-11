@@ -1,15 +1,69 @@
 body {
-    background: #111;
+    background: #0f172a;
+    /* deep navy */
+    color: #e5e7eb;
+    font-family: "Segoe UI", sans-serif;
+    margin: 0;
+}
+
+/* Header */
+.header {
+    padding: 20px;
+    text-align: center;
+    background: #020617;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+/* Layout grid */
+.container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Cards */
+.card {
+    background: #020617;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Card title */
+.card h3 {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #94a3b8;
+}
+
+/* Controls */
+.controls {
+    text-align: center;
+    margin: 20px;
+}
+
+input,
+button {
+    padding: 8px;
+    margin: 5px;
+    border-radius: 6px;
+    border: none;
+}
+
+button {
+    background: #2563eb;
     color: white;
+    cursor: pointer;
 }
 
+/* Canvas */
 canvas {
-    background: #1c1c1c;
-    border-radius: 10px;
-    padding: 10px;
-    margin: 20px 0;
+    width: 100% !important;
+    height: 300px !important;
 }
 
-h2 {
+.card {
     text-align: center;
 }
