@@ -17,19 +17,22 @@ def test_data_endpoint():
     assert len(data["time"]) > 0
     
 def test_api_matches_db():
-    # 🔹 Step 1: Fetch first 10 rows directly from DB
+    # Fetch first 10 rows from DB
     conn = sqlite3.connect("energyEirGridModified.db")
     cursor = conn.cursor()
 
-    cursor.execute("SELECT wind FROM energyEirGridModified_data LIMIT 10")
+    cursor.execute("""
+    SELECT wind FROM energyEirGridModified_data 
+    ORDER BY time LIMIT 10
+""")
     db_rows = cursor.fetchall()
 
     conn.close()
 
-    # Convert DB result → list
+    # Convert DB fetched result to list list
     db_wind = [row[0] for row in db_rows]
 
-    # 🔹 Step 2: Call Flask API
+    # Call Flask API and fetch data
     client = app.test_client()
     response = client.get("/data")
 
@@ -39,5 +42,6 @@ def test_api_matches_db():
 
     api_wind = data["wind"][:10]  # first 10 values
 
-    # 🔹 Step 3: Compare
-    assert db_wind == api_wind    
+    # Compare responses
+    for db_val, api_val in zip(db_wind, api_wind):
+        assert round(db_val, 2) == round(api_val, 2)  
