@@ -4,13 +4,13 @@ import sqlite3
 
 app = Flask(__name__)
 
-DB_PATH = "energyEirGridModified.db"
+DB_PATH = "energyEirGridModified1.db"
 
 
 def get_data(date=None):
     conn = sqlite3.connect(DB_PATH)
 
-    query = "SELECT * FROM energyEirGridModified_data"
+    query = "SELECT * FROM energyEirGridModified_data1"
     df = pd.read_sql(query, conn)
 
     conn.close()

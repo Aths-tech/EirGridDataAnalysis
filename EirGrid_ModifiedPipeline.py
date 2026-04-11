@@ -167,8 +167,8 @@ def save_data(df, date):
     filename = f"energyEirGridModified_{date}.csv"
     df.to_csv(filename, index=False)
 
-    engine = create_engine("sqlite:///energyEirGridModified.db")
-    df.to_sql("energyEirGridModified_data", engine, if_exists="append", index=False)
+    engine = create_engine("sqlite:///energyEirGridModified1.db")
+    df.to_sql("energyEirGridModified_data1", engine, if_exists="append", index=False)
 
     print(f"Saved CSV + DB for {date}")
 

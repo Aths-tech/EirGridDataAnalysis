@@ -18,11 +18,11 @@ def test_data_endpoint():
     
 def test_api_matches_db():
     # Fetch first 10 rows from DB
-    conn = sqlite3.connect("energyEirGridModified.db")
+    conn = sqlite3.connect("energyEirGridModified1.db")
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT wind FROM energyEirGridModified_data 
+    SELECT wind FROM energyEirGridModified_data1 
     ORDER BY time LIMIT 10
 """)
     db_rows = cursor.fetchall()
