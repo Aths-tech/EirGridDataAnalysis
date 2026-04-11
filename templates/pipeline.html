@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Energy Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<h2>⚡ Ireland Energy Dashboard</h2>
+
+<!-- Date Picker -->
+<input type="date" id="datePicker">
+<button onclick="loadData()">Load</button>
+
+<!-- Toggle -->
+<label><input type="checkbox" id="toggleWind" checked> Wind</label>
+<label><input type="checkbox" id="toggleSolar" checked> Solar</label>
+<label><input type="checkbox" id="toggleCO2" checked> CO2</label>
+
+<canvas id="mainChart"></canvas>
+
+<script>
+let chart;
+
+async function loadData() {
+    const date = document.getElementById("datePicker").value;
+
+    const res = await fetch(`/data?date=${date}`);
+    const data = await res.json();
+
+    const datasets = [];
+
+    if (document.getElementById("toggleWind").checked) {
+        datasets.push({
+            label: "Wind",
+            data: data.wind,
+            borderWidth: 2
+        });
+    }
+
+    if (document.getElementById("toggleSolar").checked) {
+        datasets.push({
+            label: "Solar",
+            data: data.solar,
+            borderWidth: 2
+        });
+    }
+
+    if (document.getElementById("toggleCO2").checked) {
+        datasets.push({
+            label: "CO2",
+            data: data.co2,
+            borderWidth: 2
+        });
+    }
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("mainChart"), {
+        type: "line",
+        data: {
+            labels: data.time,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            }
+        }
+    });
+}
+
+// Auto load today
+window.onload = loadData;
+</script>
+
+</body>
+</html>
