@@ -183,6 +183,7 @@ def get_previous_day():
 def run_pipeline():
     try:
         date = get_previous_day()
+        #date = "2026-04-05"
         today = datetime.now().strftime("%Y-%m-%d")
         print(f"Fetching data for: {date}")
         
