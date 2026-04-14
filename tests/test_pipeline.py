@@ -1,5 +1,5 @@
 import pandas as pd
-from utils import transform_data
+from utils import transform_Data
 
 # Unit for the pipeline
 
@@ -13,8 +13,8 @@ def test_sustainability_exists():
         "co2emission": [200]
     })
 
-    # call function transform_data defined in utils class
-    result = transform_data(df)
+    # call function transform_Data defined in utils class
+    result = transform_Data(df)
 
     # Verify the resuly
     assert "sustainability" in result.columns
@@ -28,7 +28,7 @@ def test_sustainability_range():
         "co2emission": [200]
     })
 
-    result = transform_data(df)
+    result = transform_Data(df)
 
     value = result["sustainability"].iloc[0]
 
@@ -44,14 +44,14 @@ def test_import_percentage():
         "co2emission": [100]
     })
 
-    result = transform_data(df)
+    result = transform_Data(df)
     # Get the first row value of import_pct
     assert result["import_pct"].iloc[0] == 10.0 
 
 # Test 4, check for dataframe is empty or not    
 def test_handles_empty_dataframe():
     import pandas as pd
-    from utils import transform_data
+    from utils import transform_Data
 
     df = pd.DataFrame(columns=[
         "renewable_percentage",
@@ -60,6 +60,6 @@ def test_handles_empty_dataframe():
         "co2emission"
     ])
 
-    result = transform_data(df)
+    result = transform_Data(df)
 
     assert isinstance(result, pd.DataFrame)        
