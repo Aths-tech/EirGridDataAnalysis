@@ -14,16 +14,21 @@ def get_data(date=None):
     df = pd.read_sql(query, conn)
 
     conn.close()
+    df[["wind","solar","actual_demand","interconnection","co2emission"]] = \
+        df[["wind","solar","actual_demand","interconnection","co2emission"]] \
+        .apply(pd.to_numeric, errors="coerce")
 
-    # 🔹 Calculations
-    df["import_pct"] = (df["interconnection"] / df["actual_demand"]) * 100
-    df["co2_norm"] = df["co2emission"] / df["co2emission"].max()
+    # Calculations
+    demand_safe = df["actual_demand"].replace(0, pd.NA)
+    df["import_pct"] = (df["interconnection"] / demand_safe) * 100
+    max_co2 = df["co2emission"].max()
 
-    # 🔹 Calculations
-    df["import_pct"] = (df["interconnection"] / df["actual_demand"]) * 100
-    df["co2_norm"] = df["co2emission"] / df["co2emission"].max()
+    if max_co2 != 0:
+        df["co2_norm"] = df["co2emission"] / max_co2
+    else:
+        df["co2_norm"] = 0
 
-    # 🔹 NEW sustainability calculation (normalized)
+    # NEW sustainability calculation (normalized)
     df["sustainability_raw"] = (
         0.6 * df["renewable_percentage"]
         - 0.2 * df["import_pct"]
@@ -33,36 +38,43 @@ def get_data(date=None):
     min_val = df["sustainability_raw"].min()
     max_val = df["sustainability_raw"].max()
 
-    df["sustainability"] = (
-        (df["sustainability_raw"] - min_val) / (max_val - min_val)
-    ) * 100
+    # Avoid division 0 division error
+    if max_val != min_val:
+        df["sustainability"] = (
+            (df["sustainability_raw"] - min_val) / (max_val - min_val)
+        ) * 100
+    else:
+        df["sustainability"] = 50
 
-    # 🔹 Time formatting
+    # Time formatting
     df["time"] = pd.to_datetime(df["time"])
 
-    # 🔹 Filter by date (if provided)
+    # Filter by date (if provided)
     if date:
         df = df[df["time"].dt.strftime("%Y-%m-%d") == date]
 
-    # 🔹 Sort
+    # Sort
     df = df.sort_values("time")
 
     return df
 
 
-# 🔹 Home route
+# html template route
 @app.route("/")
 def index():
     return render_template("pipeline.html")
 
 
-# 🔹 Main data API
+# data fetch API
 @app.route("/data")
 def data():
     date = request.args.get("date")
     df = get_data(date)
 
-    latest = df["sustainability"].iloc[-1]
+    if not df.empty and "sustainability" in df.columns:
+        latest_val = df["sustainability"].dropna()
+        latest = float(latest_val.iloc[-1]) if not latest_val.empty else 0
+    else: latest = 0    
 
     return jsonify({
         "time": df["time"].dt.strftime("%H:%M").tolist(),
@@ -76,7 +88,7 @@ def data():
     })
 
 
-# 🔹 Separate sustainability endpoint (optional)
+# Separate sustainability endpoint
 @app.route("/sustainability")
 def sustainability():
     date = request.args.get("date")

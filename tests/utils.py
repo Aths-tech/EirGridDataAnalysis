@@ -1,8 +1,6 @@
-# utils.py
-
 import pandas as pd
 
-def transform_data(df):
+def transform_Data(df):
     df["import_pct"] = (df["interconnection"] / df["actual_demand"]) * 100
     df["co2_norm"] = df["co2emission"] / df["co2emission"].max()
 

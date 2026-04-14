@@ -4,16 +4,22 @@ from sqlalchemy import create_engine
 from datetime import datetime, timedelta
 
 '''
-This program will fetch data from EirGrid site apis to fetch :
+This program will fetch data from EirGrid  apis:
 1. Solar, wind contribution to energy generation
 2. The actual demand hourly, here we are taking the last quarter of the hour data
 3. Interconnection shows the flow of energy between Ireland and Wales,Northern Ireland and Scotland.Flows from Great Britain to Ireland are shown as a positive MW transfer, while those from Ireland to Great Britain are shown as a negative MW transfer. 
-
-This program will fetch the hourly data (last quarter value of hr) for last 30 days, from above 3 apis, get the details, create data set features from each api response
-Calculate the   
+4. Co2 emission data
+This program will fetch the previous day's day data (crone job will run after 12 am to fetch previous day's data), from above 4 apis, get the details, create data set from each api response
+Create extra columns by calculating renewvable energy contribution and renewable energy %
+Create Column for interconnection status as Import/Export/Unknown based on the values of interconnection column
+Add the new columns to the data frame and generate a data set
+Duplicate rows will be deleted, null values will be appended with 0s and df is sorted
+procesed DF will be saved to DB for further use
+processed Df is saving as CSV also 
 '''
 
 # API 1 (wind, solar)
+# Sample API: https://www.smartgriddashboard.com/api/chart/?region=ROI&chartType=default&dateRange=day&dateFrom=30-Mar-2026&dateTo=30-Mar-2026&areas=solaractual,windactual,demandactual
 def fetchapiResponse_1(date):
     url = "https://www.smartgriddashboard.com/api/chart/"
     params = {
@@ -28,6 +34,7 @@ def fetchapiResponse_1(date):
 
 
 # API 2 (actual demand)
+# Sample API: https://www.smartgriddashboard.com/api/chart/?region=ROI&chartType=demand&dateRange=day&dateFrom=07-Apr-2026&dateTo=07-Apr-2026&areas=demandactual
 def fetchapiResponse_2(date):
     url = "https://www.smartgriddashboard.com/api/chart/"
     params = {
@@ -42,6 +49,7 @@ def fetchapiResponse_2(date):
 
 
 # API 3 (interconnection)
+# Sample API: https://www.smartgriddashboard.com/api/chart/?region=ROI&chartType=interconnection&dateRange=day&dateFrom=01-Apr-2026&dateTo=01-Apr-2026&areas=interconnection
 def fetchapiResponse_3(date):
     url = "https://www.smartgriddashboard.com/api/chart/"
     params = {
@@ -56,6 +64,7 @@ def fetchapiResponse_3(date):
 
 
 # API 4 (co2 emission)
+# Sample API: https://www.smartgriddashboard.com/api/chart/?region=ROI&chartType=co2&dateRange=day&dateFrom=01-Apr-2026&dateTo=01-Apr-2026&areas=co2emission
 def fetchapiResponse_4(date):
     url = "https://www.smartgriddashboard.com/api/chart/"
     params = {
@@ -166,10 +175,12 @@ def featureEngineering(df):
 def save_data(df, date):
     filename = f"energyEirGridModified_{date}.csv"
     df.to_csv(filename, index=False)
-
+    # Create a database file and store in the same folder
     engine = create_engine("sqlite:///energyEirGridModified1.db")
+    # Sort before saving
+    df = df.sort_values("time")
+    # Save data
     df.to_sql("energyEirGridModified_data1", engine, if_exists="append", index=False)
-
     print(f"Saved CSV + DB for {date}")
 
 
@@ -198,24 +209,29 @@ def run_pipeline():
         df_interconnection = processData(intercon_response)
         df_co2emission = processData(co2emission)
 
-        # Use INTER_NET_ROI only
+        # Use INTER_NET_ROI only because it is calculated based on other option
         if "INTER_NET_ROI" in df_interconnection.columns:
             df_interconnection["INTER_NET_ROI"] = df_interconnection["INTER_NET_ROI"]
         else:
             df_interconnection["INTER_NET_ROI"] = 0
 
-        # Merge all the dataframes created as a single dataset
+        # Merge all the dataframes and created a single dataset
         df = mergeData(df_demand, df_interconnection, df_wind_solar, df_co2emission)
 
         # Feature Engineering
         df = featureEngineering(df)
-              
+        
+        # data cleaning and preparation steps 
+        # Replace missing values with 0   
         df.fillna(0, inplace=True)
+        
+        # Remove duplicate rows
         df.drop_duplicates(subset=["time"], inplace=True)
+        # Sort values based on time
         df = df.sort_values("time")
-
         print(df.head())
-
+        
+        # Save clean data to DB
         save_data(df, today)
 
     except Exception as e:
