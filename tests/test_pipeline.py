@@ -62,4 +62,30 @@ def test_handles_empty_dataframe():
 
     result = transform_Data(df)
 
-    assert isinstance(result, pd.DataFrame)        
+    assert isinstance(result, pd.DataFrame) 
+    
+# Test 5, verify that CO₂ normalization step is created correctly
+def test_co2_normalization():
+    df = pd.DataFrame({
+        "renewable_percentage": [50],
+        "interconnection": [10],
+        "actual_demand": [100],
+        "co2emission": [100]
+    })
+
+    result = transform_Data(df)
+
+    assert "co2_norm" in result.columns  
+
+# Test 6, verify no division by 0 error
+def test_no_division_by_zero():
+    df = pd.DataFrame({
+        "renewable_percentage": [50],
+        "interconnection": [10],
+        "actual_demand": [0],  # edge case
+        "co2emission": [100]
+    })
+
+    result = transform_Data(df)
+
+    assert not result["import_pct"].isnull().all()             
